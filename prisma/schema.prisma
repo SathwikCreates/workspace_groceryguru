@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(cuid())
+  email         String       @unique
+  name          String?
+  password      String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  histories     UserHistory[]
+  savedKits     SavedKit[]
+  priceAlerts   PriceAlert[]
+  preferences   UserPreferences?
+}
+
+model UserPreferences {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultQuality      String? @default("cheap")
+  defaultPurpose      String? @default("all")
+  defaultBudget       Int?
+  dietaryPreferences  String? // JSON string
+  favoriteStores      String? // JSON string
+}
+
+model GroceryItem {
+  id            String   @id @default(cuid())
+  name          String
+  brand         String?
+  category      String
+  basePrice     Float
+  quality       String   // "cheap" or "premium"
+  stockStatus   String?  @default("available")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model GroceryKit {
+  id            String   @id @default(cuid())
+  name          String
+  purpose       String   // "all", "everyday", "baking", "biryani", "diet", "gym"
+  quality       String   // "cheap" or "premium"
+  basePrice     Float
+  items         String   // JSON string of items
+  description   String?  // AI-generated description
+  tips          String?  // JSON string of tips
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  savedKits     SavedKit[]
+  histories     UserHistory[]
+}
+
+model UserHistory {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kitId         String
+  kit           GroceryKit @relation(fields: [kitId], references: [id])
+  budget        Int
+  spent         Float
+  platform      String?
+  timestamp     DateTime  @default(now())
+}
+
+model SavedKit {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kitId         String
+  kit           GroceryKit @relation(fields: [kitId], references: [id])
+  customizations String?  // JSON string of custom items/quantities
+  name          String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model PriceAlert {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item          String
+  targetPrice   Float
+  currentPrice  Float?
+  platform      String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
